@@ -9,21 +9,25 @@ import java.util.*;
 
 @Service
 class BankingWorkflows {
+ Bills bills(){return bills;} Advances advances(){return advances;}
  final Users users;final Accounts accounts;final Applications applications;final Ledgers ledgers;
  final Transfers transfers;final DirectDeposits payroll;final Advances advances;final Referrals referrals;
- final Bills bills;final Preferences prefs;final Notices notices;final AuditService audit;
+ final Bills bills;final Preferences prefs;final Notices notices;final AuditService audit;final Products products;
  BankingWorkflows(Users u,Accounts a,Applications ap,Ledgers l,Transfers t,DirectDeposits d,Advances ad,
-  Referrals r,Bills b,Preferences p,Notices n,AuditService audit){
+  Referrals r,Bills b,Preferences p,Notices n,AuditService audit,Products products){
   this.users=u;this.accounts=a;this.applications=ap;this.ledgers=l;this.transfers=t;this.payroll=d;
-  this.advances=ad;this.referrals=r;this.bills=b;this.prefs=p;this.notices=n;this.audit=audit;
+  this.advances=ad;this.referrals=r;this.bills=b;this.prefs=p;this.notices=n;this.audit=audit;this.products=products;
  }
  @Transactional AccountApplication apply(Long user,String type) {
-  if(!List.of("CHECKING","SAVINGS","BUSINESS_CHECKING","BUSINESS_SAVINGS").contains(type))throw new IllegalArgumentException("Unsupported account product");
+  BankingProduct product=products.findByCode(type).orElseThrow(()->new IllegalArgumentException("Unsupported account product"));
+  if(!product.enabled)throw new IllegalArgumentException("This product is not currently available");
+  if(!List.of("CHECKING","SAVINGS","BUSINESS_CHECKING","BUSINESS_SAVINGS","MONEY_MARKET","CD").contains(type))throw new IllegalArgumentException("This product requires a specialist credit or joint-owner application; it cannot be opened as a deposit account");
   AccountApplication ap=new AccountApplication();ap.userId=user;ap.accountType=type;ap.status="PENDING";applications.save(ap);
   audit.record(user,"ACCOUNT_APPLIED","APPLICATION",ap.id);return ap;
  }
  @Transactional BankAccount approveApplication(Long appId,Long reviewer){
   AccountApplication ap=applications.lock(appId).orElseThrow();
+  if(!products.findByCode(ap.accountType).map(p->p.enabled).orElse(false))throw new IllegalArgumentException("Product is disabled");
   if(!"PENDING".equals(ap.status))throw new IllegalArgumentException("Application already processed");
   BankAccount a=new BankAccount();a.userId=ap.userId;a.accountType=ap.accountType;a.status="ACTIVE";
   a.accountNumber="SIM"+UUID.randomUUID().toString().replace("-","").substring(0,14).toUpperCase(Locale.ROOT);
@@ -49,6 +53,8 @@ class BankingWorkflows {
   if(requestKey==null || !requestKey.matches("[A-Za-z0-9:_-]{8,90}"))throw new IllegalArgumentException("Provide a unique request key (8-90 characters)");
   Optional<BankTransfer> previous=transfers.findByRequestKey(requestKey);
   if(previous.isPresent()){
+   BankAccount owned=accounts.findById(senderId).orElseThrow(()->new IllegalArgumentException("Account not found"));
+   if(!owned.userId.equals(senderUser))throw new org.springframework.security.access.AccessDeniedException("Not your account");
    BankTransfer old=previous.get();
    if(!old.fromAccountId.equals(senderId)||!old.toAccountId.equals(recipientId)||old.amount.compareTo(amount)!=0)
     throw new IllegalArgumentException("Idempotency key already used for different transfer");
@@ -103,23 +109,35 @@ class BankingWorkflows {
   audit.record(userId,"ADVANCE_GRANTED","ADVANCE",c.id);return c;
  }
  @Transactional BillPayment bill(Long userId,Long accountId,String biller,String reference,BigDecimal amount,LocalDate date,String requestKey){
+  amount=Ledgers.money(amount);
+  if(accountId==null||date==null)throw new IllegalArgumentException("Account and payment date required");
   BankAccount a=accounts.findById(accountId).orElseThrow();
   if(!a.userId.equals(userId)||!"ACTIVE".equals(a.status))throw new org.springframework.security.access.AccessDeniedException("Not your account");
-  if(biller==null||biller.isBlank()||biller.length()>160||reference==null||reference.isBlank())throw new IllegalArgumentException("Biller and reference required");
+  if(biller==null||biller.isBlank()||biller.length()>160||reference==null||reference.isBlank()||reference.length()>80)throw new IllegalArgumentException("Biller and reference required (reference maximum 80 characters)");
   if(date.isBefore(LocalDate.now())||date.isAfter(LocalDate.now().plusYears(1)))throw new IllegalArgumentException("Invalid payment date");
   if(requestKey==null||!requestKey.matches("[A-Za-z0-9:_-]{8,90}"))throw new IllegalArgumentException("Unique request key required");
-  if(bills.findByRequestKey(requestKey).isPresent())return bills.findByRequestKey(requestKey).orElseThrow();
+  Optional<BillPayment> prior=bills.findByRequestKey(requestKey);
+  if(prior.isPresent()){
+   BillPayment old=prior.get();
+   if(!old.accountId.equals(accountId)||!old.biller.equals(biller)||!old.reference.equals(reference)||old.amount.compareTo(amount)!=0||!old.scheduledOn.equals(date))throw new IllegalArgumentException("Idempotency key already used for a different payment");
+   return old;
+  }
   BillPayment b=new BillPayment();b.accountId=a.id;b.biller=biller;b.reference=reference;b.amount=Ledgers.money(amount);b.scheduledOn=date;b.status="SCHEDULED";b.requestKey=requestKey;bills.save(b);
   notices.post(userId,"Bill payment scheduled","$"+amount+" payment to "+biller+" scheduled for "+date);
   audit.record(userId,"BILL_SCHEDULED","BILL",b.id);return b;
  }
  @Transactional void executeBill(Long billId){
-  BillPayment b=bills.findById(billId).orElseThrow();if(!"SCHEDULED".equals(b.status))return;
+  BillPayment b=bills.lock(billId).orElseThrow();if(!"SCHEDULED".equals(b.status))return;
   BankAccount a=ledgers.account(b.accountId);
   if(a.balance.compareTo(b.amount)<0||!"ACTIVE".equals(a.status)){
    b.status="FAILED";bills.save(b);notices.post(a.userId,"Bill payment failed","Insufficient funds or inactive account for "+b.biller);return;
   }
   ledgers.debit(a,b.amount,"BILL:"+b.id,"Simulated bill payment to "+b.biller,"HOUSE:BILLER_SETTLEMENT");
   b.status="COMPLETED";bills.save(b);notices.post(a.userId,"Bill payment completed","Paid $"+b.amount+" to fictional biller "+b.biller);
+  if(!"ONCE".equals(b.frequency)){
+   BillPayment next=new BillPayment();next.accountId=b.accountId;next.biller=b.biller;next.reference=b.reference;next.amount=b.amount;
+   next.frequency=b.frequency;next.parentId=b.parentId==null?b.id:b.parentId;next.scheduledOn=CustomerServices.next(b.scheduledOn,b.frequency);next.status="SCHEDULED";
+   next.requestKey="AUTOPAY:"+next.parentId+":"+next.scheduledOn;bills.save(next);
+  }
  }
 }

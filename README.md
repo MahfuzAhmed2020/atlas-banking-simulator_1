@@ -2,7 +2,11 @@
 
 > **Educational/test environment ONLY.** All accounts, check images, funds, payroll, billers and reward credits must be fictional. No ACH, Zelle, real SMS, real check clearing, actual KYC or production-grade financial provider is connected. Not safe for real banking customers or production financial operations.
 
-## Latest implementation pass
+## Customer services extension (2026-10-31)
+
+New integrated modules include debit-card controls and issuance review, secure messaging, service requests and closure review, saved billers, recurring bills, transfer schedules, React Router navigation, product controls, encrypted authenticator TOTP, recognized sessions/revocation, and PDF statements/receipts with MailHog delivery history. See [customer services setup and behavior](docs/CUSTOMER_SERVICES.md) and the [full master-prompt status matrix](docs/MASTER_PROMPT_STATUS.md). **All 36 sections are not yet complete.**
+
+## Previous foundation implementation
 
 Swagger/OpenAPI integration and build fixes are described in [docs/SWAGGER.md](docs/SWAGGER.md). See [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) for the phase-by-phase gap list. The source package is not completion of every master-prompt section.
 
@@ -19,7 +23,7 @@ Rebuild the ZIP with `.\scripts\package.ps1`. The archive excludes credentials, 
 - Internal account and customer-to-customer transfers, including lookup by verified email and simulated verified phone identifier; transaction idempotency, locked account rows and balanced ledger journals. No real Zelle connection.
 - Mobile check photo uploads (front + back JPEG/PNG), duplicate-image/check-number detection, admin/assigned employee review, instant after-approval credit with a $5 fee, and free next-business-day credit after approval. Federal holiday/weekend calendar approximation. **OCR is NOT implemented; review is manual.**
 - Simulated payroll credits, $100 advance based on 4 weeks of payroll records, payroll-linked repayments, referral codes and one-time $500 bonus on first approved referred account if sponsor has an active account.
-- One-time bill payments for fictional billers, due-date background processing, failed/paid statuses. No live external settlement or AutoPay.
+- One-time bill payments for fictional billers, due-date background processing, failed/paid statuses. No live external settlement. The extension adds weekly/monthly simulated AutoPay and cancellation.
 - Loan obligations, OpenFEMA *optional* data ingestion, admin county-FIPS verification step and 30-day deferral under demo rules; in-app alerts, low-balance and large-transaction preferences, MailHog delivery, audit records.
 - Swagger/OpenAPI at `http://localhost:3000/swagger-ui/index.html` after ADMIN login with MFA.
 
@@ -28,9 +32,9 @@ Rebuild the ZIP with `.\scripts\package.ps1`. The archive excludes credentials, 
 ## What is NOT finished / limitations
 
 This is a **substantial Phase 1–4 source-code foundation, not the entire 29-section production application**. Further implementation and integration tests are needed before relying on all flows. In particular:
-- React has ~20 working views, **not yet 45–55 fully built pages**. Separate credit-card management, business product settings, AutoPay, full loan lifecycle, electronic statements/PDF exports, customer support ticketing, multi-branch management, full fraud models and incident workflows are not built.
+- React has ~20 working views, **not yet 45–55 fully built pages**. Full credit-card debt/merchant management, full loan lifecycle, dedicated support ticketing, multi-branch management, full fraud models and incident workflows remain incomplete. The extension adds debit-card controls, product toggles, recurring bills, secure messaging and PDF documents.
 - Tesseract/OCR, explicit check image endorsements, photo quality checks, signature/MICR validation, source bank check clearing and sophisticated fraud detection are not built. Test check validation is based on image file type, duplicates and human review only.
-- Only session + email OTP MFA is provided; authenticator TOTP, genuine phone SMS, verified device binding, passkeys, biometric login and identity vendor integration are not implemented.
+- Session/email OTP plus optional authenticator TOTP are provided. Recognized-session management and revocation are included. Genuine phone SMS, stronger verified device binding, recovery codes, passkeys, biometric login and identity vendor integration remain incomplete.
 - FEMA mapping does **not automatically geocode street addresses**. An administrator must supply an independently verified county FIPS and confirm the address; see `docs/FEMA.md`. API updates are optional, require internet, and remote schema changes could require maintenance.
 - MailHog mail delivery is local-only. Failed MailHog messages are logged as warnings and in-app notifications persist. Full retry queues and production notifications are not built.
 - Balance records are updated in the same SQL transaction as zero-sum journal postings for supported workflows. **This does not represent a regulator-audited or general ledger-complete banking accounting system.**

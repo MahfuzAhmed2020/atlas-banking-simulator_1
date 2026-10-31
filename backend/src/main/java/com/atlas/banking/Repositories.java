@@ -32,7 +32,9 @@ interface Transfers extends JpaRepository<BankTransfer,Long> { Optional<BankTran
 interface DirectDeposits extends JpaRepository<DirectDeposit,Long> { List<DirectDeposit> findByAccountIdOrderByIdDesc(Long id); }
 interface Advances extends JpaRepository<CashAdvance,Long> { boolean existsByAccountIdAndStatus(Long id,String status); List<CashAdvance> findByAccountId(Long id); }
 interface Referrals extends JpaRepository<Referral,Long> { Optional<Referral> findByReferredId(Long id); List<Referral> findByReferrerId(Long id); }
-interface Bills extends JpaRepository<BillPayment,Long> { List<BillPayment> findByStatusAndScheduledOnLessThanEqual(String status,java.time.LocalDate date); List<BillPayment> findByAccountId(Long id); Optional<BillPayment> findByRequestKey(String key); }
+interface Bills extends JpaRepository<BillPayment,Long> {
+ @Lock(LockModeType.PESSIMISTIC_WRITE) @Query("select b from BillPayment b where b.id=:id") Optional<BillPayment> lock(@Param("id") Long id);
+ List<BillPayment> findByStatusAndScheduledOnLessThanEqual(String status,java.time.LocalDate date); List<BillPayment> findByAccountId(Long id); Optional<BillPayment> findByRequestKey(String key); }
 interface Loans extends JpaRepository<BankLoan,Long> { List<BankLoan> findByUserId(Long id); }
 interface Disasters extends JpaRepository<FemaDisaster,Long> { boolean existsByDisasterNumberAndCountyFips(Integer number,String fips); List<FemaDisaster> findByCountyFips(String fips); }
 interface Deferrals extends JpaRepository<Deferral,Long> { boolean existsByLoanIdAndDisasterNumber(Long loanId,Integer disaster); List<Deferral> findByLoanId(Long id); }

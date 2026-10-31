@@ -115,6 +115,8 @@ class Referral extends BaseRecord {
 @com.fasterxml.jackson.annotation.JsonAutoDetect(fieldVisibility=com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY)
 @Entity @Table(name="bill_payments")
 class BillPayment extends BaseRecord {
+ String frequency="ONCE";
+ @Column(name="parent_id") Long parentId;
  @Column(name="account_id") Long accountId;
  String biller,reference;
  BigDecimal amount;

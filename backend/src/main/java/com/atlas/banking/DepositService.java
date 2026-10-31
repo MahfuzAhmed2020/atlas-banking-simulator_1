@@ -86,6 +86,7 @@ class DepositService {
   audit.record(reviewer,approve?"CHECK_APPROVED":"CHECK_REJECTED","DEPOSIT",id);return d;
  }
  @Transactional void settle(CheckDeposit d){
+  d=checks.lock(d.id).orElseThrow(()->new IllegalArgumentException("Deposit not found"));
   if(!"PENDING_REVIEW".equals(d.status)&&!"APPROVED_HOLD".equals(d.status))return;
   BankAccount a=ledger.account(d.accountId);
   if(!"ACTIVE".equals(a.status))throw new IllegalArgumentException("Cannot credit inactive account");

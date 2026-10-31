@@ -1,627 +1,757 @@
 {
-  "info": {
-    "name": "Atlas Banking Simulator — Test REST API",
-    "description": "SIMULATION ONLY. Obtain CSRF token before POST; browser or Postman cookie jar must retain JSESSIONID. Fetch MFA OTP from localhost:8025.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:3000"
-    },
-    {
-      "key": "csrf",
-      "value": ""
-    },
-    {
-      "key": "email",
-      "value": "owner@atlas.test"
-    },
-    {
-      "key": "password",
-      "value": "ChangeMe-Admin-123!"
-    }
-  ],
-  "item": [
-    {
-      "name": "0. Get CSRF token",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/csrf",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "auth",
-            "csrf"
-          ]
-        }
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.collectionVariables.set('csrf', pm.response.json().token);"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ]
-    },
-    {
-      "name": "1. Login user + password",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-XSRF-TOKEN",
-            "value": "{{csrf}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/login",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "auth",
-            "login"
-          ]
-        },
-        "body": {
-          "mode": "urlencoded",
-          "urlencoded": [
-            {
-              "key": "email",
-              "value": "{{email}}",
-              "type": "text"
-            },
-            {
-              "key": "password",
-              "value": "{{password}}",
-              "type": "text"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "name": "2. MFA verify from MailHog",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-XSRF-TOKEN",
-            "value": "{{csrf}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/mfa/verify",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "auth",
-            "mfa",
-            "verify"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"code\": \"000000\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Session profile",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/auth/me",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "auth",
-            "me"
-          ]
-        }
-      }
-    },
-    {
-      "name": "Customer dashboard",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/customer/dashboard",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "customer",
-            "dashboard"
-          ]
-        }
-      }
-    },
-    {
-      "name": "Customer accounts",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/customer/accounts",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "customer",
-            "accounts"
-          ]
-        }
-      }
-    },
-    {
-      "name": "Submit checking application",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-XSRF-TOKEN",
-            "value": "{{csrf}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/customer/applications",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "customer",
-            "applications"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"accountType\": \"CHECKING\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Transfer $25 between sample account IDs",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-XSRF-TOKEN",
-            "value": "{{csrf}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/customer/transfers",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "customer",
-            "transfers"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"fromAccountId\": 1,\n  \"toAccountId\": 2,\n  \"amount\": 25,\n  \"requestKey\": \"postman-transfer-0000001\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Create fictional bill",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-XSRF-TOKEN",
-            "value": "{{csrf}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/customer/bills",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "customer",
-            "bills"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"accountId\": 1,\n  \"biller\": \"Demo Electric Utility\",\n  \"reference\": \"DEMO001\",\n  \"amount\": 40,\n  \"scheduledOn\": \"2026-11-05\",\n  \"requestKey\": \"postman-bill-0000001\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Customer notifications",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/customer/notifications",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "customer",
-            "notifications"
-          ]
-        }
-      }
-    },
-    {
-      "name": "Admin overview",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/admin/overview",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "admin",
-            "overview"
-          ]
-        }
-      }
-    },
-    {
-      "name": "Admin applications queue",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/admin/applications",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "admin",
-            "applications"
-          ]
-        }
-      }
-    },
-    {
-      "name": "Admin approve application ID",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-XSRF-TOKEN",
-            "value": "{{csrf}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/admin/applications/1/approve",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "admin",
-            "applications",
-            "1",
-            "approve"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Admin review check ID",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-XSRF-TOKEN",
-            "value": "{{csrf}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/admin/checks/1/review",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "admin",
-            "checks",
-            "1",
-            "review"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"approve\": true\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Admin create simulated payroll",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-XSRF-TOKEN",
-            "value": "{{csrf}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/admin/payroll",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "admin",
-            "payroll"
-          ]
-        },
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"accountId\": 1,\n  \"amount\": 800,\n  \"employer\": \"Fictional Employer\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Admin seed 4 payroll weeks",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-XSRF-TOKEN",
-            "value": "{{csrf}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/admin/demo/payroll-history?accountId=1&amount=800",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "admin",
-            "demo",
-            "payroll-history?accountId=1&amount=800"
-          ]
-        }
-      }
-    },
-    {
-      "name": "Admin generate 100 customers",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-XSRF-TOKEN",
-            "value": "{{csrf}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/admin/demo/generate?count=100",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "admin",
-            "demo",
-            "generate?count=100"
-          ]
-        }
-      }
-    },
-    {
-      "name": "Admin FEMA sync",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-XSRF-TOKEN",
-            "value": "{{csrf}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/admin/fema/sync",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "admin",
-            "fema",
-            "sync"
-          ]
-        }
-      }
-    },
-    {
-      "name": "Admin FEMA evaluation",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "X-XSRF-TOKEN",
-            "value": "{{csrf}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/admin/fema/evaluate",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "admin",
-            "fema",
-            "evaluate"
-          ]
-        }
-      }
-    },
-    {
-      "name": "Admin audit log",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/api/admin/audits",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "admin",
-            "audits"
-          ]
-        }
-      }
-    },
-    {
-      "name": "Documentation: /v3/api-docs",
-      "request": {
-        "method": "GET",
-        "url": "{{baseUrl}}/v3/api-docs"
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('Administrator MFA session can read docs', () => pm.response.to.have.status(200));"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "Documentation: /v3/api-docs/swagger-config",
-      "request": {
-        "method": "GET",
-        "url": "{{baseUrl}}/v3/api-docs/swagger-config"
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('Administrator MFA session can read docs', () => pm.response.to.have.status(200));"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "Documentation: /v3/api-docs/Money-Transfers",
-      "request": {
-        "method": "GET",
-        "url": "{{baseUrl}}/v3/api-docs/Money-Transfers"
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('Administrator MFA session can read docs', () => pm.response.to.have.status(200));"
-            ]
-          }
-        }
-      ]
-    }
-  ]
+    "info":  {
+                 "name":  "Atlas Banking Simulator — Test REST API",
+                 "description":  "SIMULATION ONLY. Obtain CSRF token before POST; browser or Postman cookie jar must retain JSESSIONID. Fetch MFA OTP from localhost:8025.",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "variable":  [
+                     {
+                         "key":  "baseUrl",
+                         "value":  "http://localhost:3000"
+                     },
+                     {
+                         "key":  "csrf",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "email",
+                         "value":  "owner@atlas.test"
+                     },
+                     {
+                         "key":  "password",
+                         "value":  "ChangeMe-Admin-123!"
+                     },
+                     {
+                         "key":  "accountId",
+                         "value":  "1"
+                     }
+                 ],
+    "item":  [
+                 {
+                     "name":  "0. Get CSRF token",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/auth/csrf",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "auth",
+                                                              "csrf"
+                                                          ]
+                                             }
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "exec":  [
+                                                                   "pm.collectionVariables.set(\u0027csrf\u0027, pm.response.json().token);"
+                                                               ],
+                                                      "type":  "text/javascript"
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "1. Login user + password",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-XSRF-TOKEN",
+                                                        "value":  "{{csrf}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/auth/login",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "auth",
+                                                              "login"
+                                                          ]
+                                             },
+                                     "body":  {
+                                                  "mode":  "urlencoded",
+                                                  "urlencoded":  [
+                                                                     {
+                                                                         "key":  "email",
+                                                                         "value":  "{{email}}",
+                                                                         "type":  "text"
+                                                                     },
+                                                                     {
+                                                                         "key":  "password",
+                                                                         "value":  "{{password}}",
+                                                                         "type":  "text"
+                                                                     }
+                                                                 ]
+                                              }
+                                 }
+                 },
+                 {
+                     "name":  "2. MFA verify from MailHog",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-XSRF-TOKEN",
+                                                        "value":  "{{csrf}}"
+                                                    },
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/auth/mfa/verify",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "auth",
+                                                              "mfa",
+                                                              "verify"
+                                                          ]
+                                             },
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"code\": \"000000\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              }
+                                 }
+                 },
+                 {
+                     "name":  "Session profile",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/auth/me",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "auth",
+                                                              "me"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Customer dashboard",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/customer/dashboard",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "customer",
+                                                              "dashboard"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Customer accounts",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/customer/accounts",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "customer",
+                                                              "accounts"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Submit checking application",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-XSRF-TOKEN",
+                                                        "value":  "{{csrf}}"
+                                                    },
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/customer/applications",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "customer",
+                                                              "applications"
+                                                          ]
+                                             },
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"accountType\": \"CHECKING\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              }
+                                 }
+                 },
+                 {
+                     "name":  "Transfer $25 between sample account IDs",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-XSRF-TOKEN",
+                                                        "value":  "{{csrf}}"
+                                                    },
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/customer/transfers",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "customer",
+                                                              "transfers"
+                                                          ]
+                                             },
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"fromAccountId\": 1,\n  \"toAccountId\": 2,\n  \"amount\": 25,\n  \"requestKey\": \"postman-transfer-0000001\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              }
+                                 }
+                 },
+                 {
+                     "name":  "Create fictional bill",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-XSRF-TOKEN",
+                                                        "value":  "{{csrf}}"
+                                                    },
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/customer/bills",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "customer",
+                                                              "bills"
+                                                          ]
+                                             },
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"accountId\": 1,\n  \"biller\": \"Demo Electric Utility\",\n  \"reference\": \"DEMO001\",\n  \"amount\": 40,\n  \"scheduledOn\": \"2026-11-05\",\n  \"requestKey\": \"postman-bill-0000001\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              }
+                                 }
+                 },
+                 {
+                     "name":  "Customer notifications",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/customer/notifications",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "customer",
+                                                              "notifications"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Admin overview",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/admin/overview",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "admin",
+                                                              "overview"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Admin applications queue",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/admin/applications",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "admin",
+                                                              "applications"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Admin approve application ID",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-XSRF-TOKEN",
+                                                        "value":  "{{csrf}}"
+                                                    },
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/admin/applications/1/approve",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "admin",
+                                                              "applications",
+                                                              "1",
+                                                              "approve"
+                                                          ]
+                                             },
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              }
+                                 }
+                 },
+                 {
+                     "name":  "Admin review check ID",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-XSRF-TOKEN",
+                                                        "value":  "{{csrf}}"
+                                                    },
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/admin/checks/1/review",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "admin",
+                                                              "checks",
+                                                              "1",
+                                                              "review"
+                                                          ]
+                                             },
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"approve\": true\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              }
+                                 }
+                 },
+                 {
+                     "name":  "Admin create simulated payroll",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-XSRF-TOKEN",
+                                                        "value":  "{{csrf}}"
+                                                    },
+                                                    {
+                                                        "key":  "Content-Type",
+                                                        "value":  "application/json"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/admin/payroll",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "admin",
+                                                              "payroll"
+                                                          ]
+                                             },
+                                     "body":  {
+                                                  "mode":  "raw",
+                                                  "raw":  "{\n  \"accountId\": 1,\n  \"amount\": 800,\n  \"employer\": \"Fictional Employer\"\n}",
+                                                  "options":  {
+                                                                  "raw":  {
+                                                                              "language":  "json"
+                                                                          }
+                                                              }
+                                              }
+                                 }
+                 },
+                 {
+                     "name":  "Admin seed 4 payroll weeks",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-XSRF-TOKEN",
+                                                        "value":  "{{csrf}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/admin/demo/payroll-history?accountId=1\u0026amount=800",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "admin",
+                                                              "demo",
+                                                              "payroll-history?accountId=1\u0026amount=800"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Admin generate 100 customers",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-XSRF-TOKEN",
+                                                        "value":  "{{csrf}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/admin/demo/generate?count=100",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "admin",
+                                                              "demo",
+                                                              "generate?count=100"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Admin FEMA sync",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-XSRF-TOKEN",
+                                                        "value":  "{{csrf}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/admin/fema/sync",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "admin",
+                                                              "fema",
+                                                              "sync"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Admin FEMA evaluation",
+                     "request":  {
+                                     "method":  "POST",
+                                     "header":  [
+                                                    {
+                                                        "key":  "X-XSRF-TOKEN",
+                                                        "value":  "{{csrf}}"
+                                                    }
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/admin/fema/evaluate",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "admin",
+                                                              "fema",
+                                                              "evaluate"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Admin audit log",
+                     "request":  {
+                                     "method":  "GET",
+                                     "header":  [
+
+                                                ],
+                                     "url":  {
+                                                 "raw":  "{{baseUrl}}/api/admin/audits",
+                                                 "host":  [
+                                                              "{{baseUrl}}"
+                                                          ],
+                                                 "path":  [
+                                                              "api",
+                                                              "admin",
+                                                              "audits"
+                                                          ]
+                                             }
+                                 }
+                 },
+                 {
+                     "name":  "Documentation: /v3/api-docs",
+                     "request":  {
+                                     "method":  "GET",
+                                     "url":  "{{baseUrl}}/v3/api-docs"
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "pm.test(\u0027Administrator MFA session can read docs\u0027, () =\u003e pm.response.to.have.status(200));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Documentation: /v3/api-docs/swagger-config",
+                     "request":  {
+                                     "method":  "GET",
+                                     "url":  "{{baseUrl}}/v3/api-docs/swagger-config"
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "pm.test(\u0027Administrator MFA session can read docs\u0027, () =\u003e pm.response.to.have.status(200));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Documentation: /v3/api-docs/Money-Transfers",
+                     "request":  {
+                                     "method":  "GET",
+                                     "url":  "{{baseUrl}}/v3/api-docs/Money-Transfers"
+                                 },
+                     "event":  [
+                                   {
+                                       "listen":  "test",
+                                       "script":  {
+                                                      "type":  "text/javascript",
+                                                      "exec":  [
+                                                                   "pm.test(\u0027Administrator MFA session can read docs\u0027, () =\u003e pm.response.to.have.status(200));"
+                                                               ]
+                                                  }
+                                   }
+                               ]
+                 },
+                 {
+                     "name":  "Customer services extension (select appropriate MFA role session)",
+                     "item":  [
+                                  {
+                                      "name":  "Customer: cards",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/customer/services/cards"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Customer: requests",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/customer/services/requests"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Customer: messages",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/customer/services/messages"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Customer: settings",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/customer/services/settings"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Customer: billers",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/customer/services/billers"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Customer: schedules",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/customer/services/schedules"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Customer: products",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/customer/services/products"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Documents: list own snapshots",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/documents"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Security: recognized sessions",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/auth/sessions"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Security: authenticator status",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/auth/authenticator"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Customer: request a fictional debit card",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  "{{baseUrl}}/api/customer/services/requests",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     },
+                                                                     {
+                                                                         "key":  "X-XSRF-TOKEN",
+                                                                         "value":  "{{csrf}}"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\"accountId\":{{accountId}},\"kind\":\"CARD_ISSUE\",\"details\":\"Fictional debit card request\"}"
+                                                               }
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Staff: pending assigned service requests",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/employee/services/requests"
+                                                  }
+                                  },
+                                  {
+                                      "name":  "Admin: banking product configuration",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/api/admin/products"
+                                                  }
+                                  }
+                              ]
+                 }
+             ]
 }

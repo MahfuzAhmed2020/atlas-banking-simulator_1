@@ -79,10 +79,16 @@ class CustomerController {
  @Operation(description="Uses the application session and enforces route and resource permissions.")
  @ApiResponse(responseCode="200", description="Operation completed")
  @GetMapping("/transfers") List<BankTransfer> transfers(@RequestParam Long accountId,Authentication auth){policy.own(auth.getName(),accountId);return transfers.findByFromAccountIdOrToAccountIdOrderByIdDesc(accountId,accountId);}
- record BillRequest(Long accountId,String biller,String reference,BigDecimal amount,LocalDate scheduledOn,String requestKey){}
+ record BillRequest(Long accountId,String biller,String reference,BigDecimal amount,LocalDate scheduledOn,String requestKey,String frequency){}
  @Operation(description="Uses the application session and enforces route and resource permissions.")
  @ApiResponse(responseCode="200", description="Operation completed")
- @PostMapping("/bills") BillPayment bill(@RequestBody BillRequest req,Authentication auth){return bank.bill(current(auth).id,req.accountId(),req.biller(),req.reference(),req.amount(),req.scheduledOn(),req.requestKey());}
+ @PostMapping("/bills") @Transactional BillPayment bill(@RequestBody BillRequest req,Authentication auth){
+  String frequency=req.frequency()==null?"ONCE":req.frequency();
+  if(!Set.of("ONCE","WEEKLY","MONTHLY").contains(frequency))throw new IllegalArgumentException("Invalid payment frequency");
+  bills.findByRequestKey(req.requestKey()).ifPresent(old->{if(!old.frequency.equals(frequency))throw new IllegalArgumentException("Payment frequency cannot be changed through a retry");});
+  BillPayment b=bank.bill(current(auth).id,req.accountId(),req.biller(),req.reference(),req.amount(),req.scheduledOn(),req.requestKey());
+  b.frequency=frequency;return bills.save(b);
+ }
  @Operation(description="Uses the application session and enforces route and resource permissions.")
  @ApiResponse(responseCode="200", description="Operation completed")
  @GetMapping("/bills") List<BillPayment> bills(@RequestParam Long accountId,Authentication auth){policy.own(auth.getName(),accountId);return bills.findByAccountId(accountId);}

@@ -1,6 +1,7 @@
 package com.atlas.banking;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import org.springframework.http.*;
@@ -20,8 +21,8 @@ import java.util.*;
 @Tag(name="Authentication and MFA")
 @RestController @RequestMapping("/api/auth")
 class AuthController {
- private final Users users;private final PasswordEncoder encoder;private final CodesService codes;private final Referrals referrals;private final AuditService audit;
- AuthController(Users users,PasswordEncoder encoder,CodesService codes,Referrals referrals,AuditService audit){this.users=users;this.encoder=encoder;this.codes=codes;this.referrals=referrals;this.audit=audit;}
+ private final Users users;private final PasswordEncoder encoder;private final CodesService codes;private final Referrals referrals;private final AuditService audit;private final SessionService sessions;private final AuthenticatorService authenticator;
+ AuthController(Users users,PasswordEncoder encoder,CodesService codes,Referrals referrals,AuditService audit,SessionService sessions,AuthenticatorService authenticator){this.users=users;this.encoder=encoder;this.codes=codes;this.referrals=referrals;this.audit=audit;this.sessions=sessions;this.authenticator=authenticator;}
  record Registration(@NotBlank String fullName,@Email @NotBlank String email,@NotBlank String password,String phone,
   String street,String city,String stateCode,String zipCode,String referralCode) {}
  record OtpRequest(@Email String email,@NotBlank String code) {}
@@ -63,14 +64,15 @@ class AuthController {
  }
  @Operation(description="Uses the application session and enforces route and resource permissions.")
  @ApiResponse(responseCode="200", description="Operation completed")
- @PostMapping("/mfa/resend") Map<String,String> resend(Authentication authentication){codes.deliver(authentication.getName(),"LOGIN");return Map.of("message","New verification code sent");}
+ @PostMapping("/mfa/resend") Map<String,String> resend(Authentication authentication){if(authenticator.enabled(users.findByEmailIgnoreCase(authentication.getName()).orElseThrow().id))return Map.of("message","Use the current code from your authenticator app");codes.deliver(authentication.getName(),"LOGIN");return Map.of("message","New verification code sent");}
  @Operation(description="Uses the application session and enforces route and resource permissions.")
  @ApiResponse(responseCode="200", description="Operation completed")
- @PostMapping("/mfa/verify") @Transactional Map<String,String> mfa(@RequestBody Map<String,String> body,Authentication authentication,HttpServletRequest request){
+ @PostMapping("/mfa/verify") @Transactional Map<String,String> mfa(@RequestBody Map<String,String> body,Authentication authentication,HttpServletRequest request,HttpServletResponse response){
   BankUser u=users.findByEmailIgnoreCase(authentication.getName()).orElseThrow();
   if(!u.emailVerified)throw new IllegalArgumentException("Verify your registered email first");
-  if(!codes.verify(u.email,"LOGIN",body.getOrDefault("code","")))throw new IllegalArgumentException("Incorrect or expired code");
+  if(!(authenticator.enabled(u.id)?authenticator.verify(u.id,body.getOrDefault("code","")):codes.verify(u.email,"LOGIN",body.getOrDefault("code",""))))throw new IllegalArgumentException("Incorrect, reused or expired code");
   request.getSession().setAttribute("MFA_OK",true);audit.record(u.id,"MFA_LOGIN","USER",u.id);
+  sessions.register(u,request,response);
   return Map.of("message","MFA verified");
  }
  @Operation(description="Uses the application session and enforces route and resource permissions.")
@@ -101,11 +103,12 @@ class AuthController {
     throw new IllegalArgumentException("Password must contain 12+ characters, uppercase, number and symbol");
   if(!codes.verify(req.email(),"PASSWORD",req.code()))throw new IllegalArgumentException("Invalid or expired code");
   BankUser u=users.findByEmailIgnoreCase(req.email()).orElseThrow();u.passwordHash=encoder.encode(req.newPassword());users.save(u);
-  audit.record(u.id,"PASSWORD_RESET","USER",u.id);return Map.of("message","Password reset. Please sign in.");
+  sessions.revokeAll(u.id);audit.record(u.id,"PASSWORD_RESET","USER",u.id);return Map.of("message","Password reset. Please sign in.");
  }
 }
 @RestControllerAdvice
 class BankErrors {
+ @ExceptionHandler(java.util.NoSuchElementException.class) ResponseEntity<Map<String,String>> notFound(Exception e){return ResponseEntity.status(404).body(Map.of("error","Record not found"));}
  @ExceptionHandler({IllegalArgumentException.class,IllegalStateException.class}) ResponseEntity<Map<String,String>> invalid(RuntimeException e){
   return ResponseEntity.badRequest().body(Map.of("error",e.getMessage()==null?"Invalid request":e.getMessage()));
  }

@@ -45,7 +45,7 @@ class CodesService {
   String otp=String.format("%06d",secureRandom.nextInt(1_000_000));
   OneTimeCode code=new OneTimeCode();code.userId=u.id;code.codeHash=encoder.encode(otp);
   code.purpose=purpose;code.expiresAt=LocalDateTime.now().plusMinutes(5);codes.save(code);
-  notices.sendEmail(u.email,"Atlas Bank demo verification code", "Your simulated bank "+purpose+" code is "+otp+". It expires in 5 minutes. Never share it.");
+  notices.sendEmail(u.email,"Uchit Shikkha Bank demo verification code", "Your simulated bank "+purpose+" code is "+otp+". It expires in 5 minutes. Never share it.");
  }
  @Transactional(propagation=org.springframework.transaction.annotation.Propagation.REQUIRES_NEW) boolean verify(String email,String purpose,String otp){
   BankUser u=users.findByEmailIgnoreCase(email).orElseThrow(()->new IllegalArgumentException("Invalid code"));
@@ -117,7 +117,9 @@ class Policy {
  private final Users users;private final Accounts accounts;private final Assignments assigns;
  Policy(Users u,Accounts a,Assignments as){users=u;accounts=a;assigns=as;}
  BankUser user(String email){return users.findByEmailIgnoreCase(email).orElseThrow();}
+ BankUser usersForServices(Long id){return users.findById(id).orElseThrow(()->new IllegalArgumentException("Customer not found"));}
  BankAccount own(String email,Long accountId){
+  if(accountId==null)throw new IllegalArgumentException("Account ID required");
   BankUser u=user(email);BankAccount a=accounts.findById(accountId).orElseThrow(()->new IllegalArgumentException("Unknown account"));
   if(!a.userId.equals(u.id))throw new org.springframework.security.access.AccessDeniedException("Not your account");
   return a;

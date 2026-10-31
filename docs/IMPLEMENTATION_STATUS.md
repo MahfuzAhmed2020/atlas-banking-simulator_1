@@ -1,3 +1,7 @@
+# Current scope
+
+The 2026-10-31 extension is documented in [MASTER_PROMPT_STATUS.md](MASTER_PROMPT_STATUS.md) and [CUSTOMER_SERVICES.md](CUSTOMER_SERVICES.md). The original pass below is historical and does not include the new modules.
+
 # Phase status and remaining work
 
 The pre-existing project contains functional source for identity/email OTP, accounts, double-entry postings, internal transfers, manually reviewed check deposits, one-time/scheduled bills, demo payroll, advances, referrals, FEMA county matching, notifications, customer alerts and employee/admin operations. React provides approximately twenty integrated views. See README for the existing business limitations.

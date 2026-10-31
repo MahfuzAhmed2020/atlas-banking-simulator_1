@@ -28,7 +28,7 @@ class SecurityConfig {
      .authorities(List.of(new SimpleGrantedAuthority("ROLE_"+u.role))).disabled(!u.active).build();
   };
  }
- @Bean SecurityFilterChain filterChain(HttpSecurity http, CodesService codes) throws Exception {
+ @Bean SecurityFilterChain filterChain(HttpSecurity http, CodesService codes,SessionService sessions,AuthenticatorService authenticator,Users users) throws Exception {
   http
     .csrf(csrf->csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
       .csrfTokenRequestHandler(new org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler()))
@@ -43,9 +43,9 @@ class SecurityConfig {
       .usernameParameter("email").passwordParameter("password")
       .successHandler((req,res,authentication)-> {
        req.getSession(true).setAttribute("MFA_OK",false);
-       codes.deliver(authentication.getName(),"LOGIN");
+       if(!authenticator.enabled(users.findByEmailIgnoreCase(authentication.getName()).orElseThrow().id))codes.deliver(authentication.getName(),"LOGIN");
        res.setStatus(200); res.setContentType("application/json");
-       res.getWriter().write("{\"message\":\"Enter the 6-digit code sent to the registered email\",\"mfaRequired\":true}");
+       res.getWriter().write("{\"message\":\"Enter your authenticator code, or the emailed code if no authenticator is enrolled\",\"mfaRequired\":true}");
       })
       .failureHandler((req,res,ex)-> {
        res.setStatus(401);res.setContentType("application/json");
@@ -54,12 +54,19 @@ class SecurityConfig {
     .logout(logout->logout.logoutUrl("/api/auth/logout").invalidateHttpSession(true).deleteCookies("JSESSIONID")
       .logoutSuccessHandler((req,res,auth)->res.setStatus(204)))
     .exceptionHandling(errors->errors.authenticationEntryPoint((req,res,ex)->{res.setStatus(401);res.setContentType("application/json");res.getWriter().write("{\"error\":\"Sign in required\"}");}).accessDeniedHandler((req,res,ex)->{res.setStatus(403);res.setContentType("application/json");res.getWriter().write("{\"error\":\"Role or CSRF check failed\"}");}));
-  http.addFilterAfter(new MfaGate(),org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+  http.addFilterAfter(new MfaGate(sessions),org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+  http.addFilterBefore(new AuthRateLimit(),org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
   return http.build();
  }
  static class MfaGate extends OncePerRequestFilter {
+  final SessionService sessions;
+  MfaGate(SessionService s){sessions=s;}
   @Override protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain chain) throws ServletException,IOException {
    String path=request.getRequestURI();
+   Authentication current=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+   if(path.startsWith("/api/")&&current!=null&&current.isAuthenticated()&&!(current instanceof org.springframework.security.authentication.AnonymousAuthenticationToken)&&!sessions.allowed(current.getName(),request.getSession(false))){
+    if(request.getSession(false)!=null)request.getSession(false).invalidate();response.setStatus(401);response.setContentType("application/json");response.getWriter().write("{\"error\":\"Session revoked or account disabled; sign in again\"}");return;
+   }
    if(((path.startsWith("/api/") && !path.startsWith("/api/auth/") && !path.equals("/api/health")) || path.startsWith("/swagger-ui") || path.startsWith("/v3/api-docs"))) {
     Authentication a=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
     if(a!=null && a.isAuthenticated() && !(a instanceof org.springframework.security.authentication.AnonymousAuthenticationToken)

@@ -29,7 +29,7 @@ class OpenApiDocumentation {
   return GROUPS[11];
  }
  @Bean OpenAPI bankingOpenApi(){
-  OpenAPI api=new OpenAPI().info(new Info().title("Atlas Banking SIMULATION API").version("0.1.0")
+  OpenAPI api=new OpenAPI().info(new Info().title("Uchit Shikkha Bank SIMULATION API").version("0.1.0")
    .description("Fictional funds only. Sign in through the same-origin React app and complete email MFA before opening Swagger. Documentation requires ADMIN; customer operations still require CUSTOMER and employee operations require EMPLOYEE or ADMIN with assignment checks. Swagger uses the existing HttpOnly JSESSIONID cookie. GET /api/auth/csrf refreshes XSRF-TOKEN; Swagger sends X-XSRF-TOKEN for writes. Do not paste session cookies or passwords into Authorize. Lists currently use documented fixed limits; page/size parameters are not supported unless shown."))
    .components(new Components().addSecuritySchemes("session",new SecurityScheme().type(SecurityScheme.Type.APIKEY).in(SecurityScheme.In.COOKIE).name("JSESSIONID").description("Browser-managed session after login and MFA; cannot be manually set by Swagger.")))
    .addSecurityItem(new SecurityRequirement().addList("session"));

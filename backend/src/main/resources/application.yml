@@ -46,6 +46,7 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
 app:
+  totp-key: ${ATLAS_TOTP_KEY:}
   mail-from: ${MAIL_FROM:no-reply@atlas-bank.test}
   uploads: ${UPLOAD_DIR:./private-uploads}
   demo-seed: ${DEMO_SEED:false}

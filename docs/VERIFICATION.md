@@ -1,3 +1,11 @@
+# Extension verification - 2026-10-31
+
+The expanded Maven suite passed: 38 tests, zero failures/errors. This includes 15 customer-services integration tests, 4 RFC 6238 authenticator rule tests and the existing 19 tests. V1-V4 migrate in H2 MySQL mode; the new integration context validates entities against the migrated schema. PDFBox statement rendering was visually inspected. React TypeScript/Vite builds passed. No claim of real MySQL concurrency, live SMTP/authenticator-app, Cloudflare, browser end-to-end or physical mobile-device testing is made. See CUSTOMER_SERVICES.md for tested behavior and boundaries.
+
+Runtime follow-up: started the rebuilt release against the existing project MySQL 8.0.33 database on port 3307 with Hibernate schema validation. Corrected the PDF column mapping to explicitly use MEDIUMBLOB. All 38 tests passed again. Local health, public tunnel health and public application root returned HTTP 200; the MailHog tunnel returned HTTP 401 as expected with its existing password protection. No financial end-to-end scenario was executed.
+
+## Previous foundation verification
+
 # Verification � 2026-10-30
 
 Executed on this Windows workspace:

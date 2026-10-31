@@ -1,0 +1,6 @@
+CREATE TABLE customer_sessions (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT, user_id BIGINT NOT NULL, session_hash VARCHAR(64) NOT NULL UNIQUE,
+ device_hash VARCHAR(64) NOT NULL, user_agent VARCHAR(240) NOT NULL,
+ created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), revoked BOOLEAN NOT NULL DEFAULT FALSE,
+ FOREIGN KEY(user_id) REFERENCES users(id), INDEX idx_session_user(user_id)
+);

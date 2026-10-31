@@ -1,0 +1,8 @@
+{
+    "mailhogTunnel":  13448,
+    "app":  3832,
+    "appTunnel":  21956,
+    "mysql":  22796,
+    "mailhog":  21184,
+    "databasePort":  3307
+}

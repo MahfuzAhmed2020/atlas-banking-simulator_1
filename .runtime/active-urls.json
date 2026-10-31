@@ -1,0 +1,5 @@
+{
+    "mailhogRequiresPassword":  true,
+    "mailhog":  "https://barnes-degree-specialists-pencil.trycloudflare.com",
+    "application":  "https://warm-polyester-lang-unwrap.trycloudflare.com"
+}

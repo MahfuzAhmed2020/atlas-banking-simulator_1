@@ -1,0 +1,6 @@
+CREATE TABLE authenticator_credentials (
+ id BIGINT PRIMARY KEY AUTO_INCREMENT,user_id BIGINT NOT NULL UNIQUE,
+ encrypted_secret VARCHAR(200) NOT NULL,last_step BIGINT NOT NULL DEFAULT -1,
+ attempts INT NOT NULL DEFAULT 0, window_start BIGINT NOT NULL DEFAULT 0,
+ FOREIGN KEY(user_id) REFERENCES users(id)
+);
