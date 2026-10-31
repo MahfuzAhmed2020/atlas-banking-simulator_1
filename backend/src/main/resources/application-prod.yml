@@ -1,0 +1,12 @@
+springdoc:
+  api-docs:
+    enabled: ${DOCS_ENABLED:false}
+  swagger-ui:
+    enabled: ${DOCS_ENABLED:false}
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true
+app:
+  demo-seed: false

@@ -1,0 +1,13 @@
+**/target/
+**/node_modules/
+**/dist/
+**/.env
+**/private-uploads/
+*.log
+*.iml
+.idea/
+.vscode/
+**/.npm-cache/
+**/*.tsbuildinfo
+release/*.jar
+release/*.zip

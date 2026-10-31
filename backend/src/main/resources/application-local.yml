@@ -1,0 +1,10 @@
+springdoc:
+  api-docs:
+    enabled: ${DOCS_ENABLED:true}
+  swagger-ui:
+    enabled: ${DOCS_ENABLED:true}
+app:
+  demo-seed: ${DEMO_SEED:true}
+spring:
+  datasource:
+    password: ${DB_PASSWORD:atlas_dev_password}
